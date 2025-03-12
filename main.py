@@ -33,6 +33,7 @@ from file.operations import FileOperations
 from dialogs import APIKeyDialog, ShortcutEditor
 from audio.recorder import AudioRecorder
 from dialogs.system_audio_dialog import SystemAudioDialog
+from audio.system_capture import SystemAudioCapture
 
 class TextEditorApp:
     """Modern text editor application with A4 paper formatting."""
