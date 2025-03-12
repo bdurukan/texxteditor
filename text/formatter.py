@@ -15,9 +15,16 @@ class TextFormatter:
     
     def configure_tags(self):
         """Configure text formatting tags."""
-        # Base formatting tags
-        self.text_widget.tag_configure("bold", font=(None, None, "bold"))
-        self.text_widget.tag_configure("italic", font=(None, None, "italic"))
+        # Base formatting tags - use font.Font instead of tuples with None
+        bold_font = font.Font(self.text_widget, self.text_widget.cget("font"))
+        bold_font.configure(weight="bold")
+        self.text_widget.tag_configure("bold", font=bold_font)
+        
+        italic_font = font.Font(self.text_widget, self.text_widget.cget("font"))
+        italic_font.configure(slant="italic")
+        self.text_widget.tag_configure("italic", font=italic_font)
+        
+        # Underline doesn't need a font change, just the underline property
         self.text_widget.tag_configure("underline", underline=True)
         
         # Alignment tags
@@ -46,10 +53,13 @@ class TextFormatter:
         try:
             existing_font = self.text_widget.tag_cget(tag_name, "font")
             if not existing_font:
-                self.text_widget.tag_configure(tag_name, font=(family, size))
+                # Create a new font object
+                custom_font = font.Font(family=family, size=size)
+                self.text_widget.tag_configure(tag_name, font=custom_font)
         except tk.TclError:
             # Tag doesn't exist yet, create it
-            self.text_widget.tag_configure(tag_name, font=(family, size))
+            custom_font = font.Font(family=family, size=size)
+            self.text_widget.tag_configure(tag_name, font=custom_font)
         
         # Apply to selected text
         current_tags = self.text_widget.tag_names(tk.SEL_FIRST)
@@ -284,14 +294,19 @@ class TextFormatter:
                 parts = tag.split("-")
                 if len(parts) >= 3:
                     font_family = parts[1]
-                    font_size = int(parts[2])
+                    try:
+                        font_size = int(parts[2])
+                    except ValueError:
+                        pass
                     break
         
         # Use default font if no specific font tag is applied
         if not font_family:
-            font_family = "Calibri"
+            current_font = font.Font(font=self.text_widget.cget("font"))
+            font_family = current_font.actual("family")
         if not font_size:
-            font_size = 11
+            current_font = font.Font(font=self.text_widget.cget("font"))
+            font_size = current_font.actual("size")
             
         # Check bold, italic, underline
         is_bold = "bold" in tags
