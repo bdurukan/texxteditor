@@ -32,6 +32,7 @@ from text.statistics import DocumentStatistics
 from file.operations import FileOperations
 from dialogs import APIKeyDialog, ShortcutEditor
 from audio.recorder import AudioRecorder
+from dialogs.system_audio_dialog import SystemAudioDialog
 
 class TextEditorApp:
     """Modern text editor application with A4 paper formatting."""
@@ -285,8 +286,17 @@ class TextEditorApp:
         # Initialize audio recorder with callbacks
         self.audio_recorder = AudioRecorder(
             self.settings_manager,
-            self.update_status,
-            self.add_transcribed_text
+            status_callback=self.update_status,
+            transcription_callback=self.add_transcribed_text
+        )
+
+        # Initialize system audio capture
+        self.system_audio_capture = SystemAudioCapture(
+            self.settings_manager,
+            self.audio_recorder.transcription_service,
+            status_callback=self.update_status,
+            text_callback=self.add_transcribed_text,
+            continuous_mode=self.settings_manager.get_setting("continuous_transcription", False)
         )
         
         # Setup keyboard shortcuts
@@ -592,13 +602,14 @@ class TextEditorApp:
         self.update_status("Shortcuts saved successfully")
     
     def configure_system_audio(self):
-        """Configure system audio capture settings."""
-        # This would be implemented with a custom dialog
-        system_audio = self.settings_manager.get_setting("system_audio", False)
-        new_setting = not system_audio
-        self.settings_manager.update_setting("system_audio", new_setting)
-        status = "enabled" if new_setting else "disabled"
-        self.update_status(f"System audio capture {status}")
+        """Open the system audio configuration dialog."""
+        dialog = SystemAudioDialog(
+            self.root,
+            self.system_audio_capture,
+            self.settings_manager,
+            save_callback=self.update_system_audio_settings
+        )
+        self.root.wait_window(dialog)
     
     def setup_shortcuts(self):
         """Set up keyboard shortcuts."""
@@ -645,6 +656,20 @@ class TextEditorApp:
             tk.messagebox.showerror("Error", "Please configure your OpenAI API key first")
             self.configure_api_key()
             return
+        
+        # Check if system audio is enabled in settings
+        if not self.settings_manager.get_setting("system_audio", False):
+            tk.messagebox.showinfo(
+                "System Audio Disabled",
+                "System audio capture is currently disabled.\n" +
+                "Enable it in Settings > System Audio Capture."
+            )
+            return
+        # Get the keyboard shortcut for reference
+        shortcut = self.settings_manager.get_shortcuts().get("system_audio", "F10")
+        # Start the capture
+        self.system_audio_capture.start_capture(shortcut_key=shortcut)
+
             
         # Update status
         self.update_status("Recording system audio... (Release the key to stop)")
