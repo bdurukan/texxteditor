@@ -602,6 +602,40 @@ class TextEditorApp:
         self.setup_shortcuts()
         self.update_status("Shortcuts saved successfully")
     
+    def update_system_audio_settings(self, settings):
+        """Update system audio settings from the dialog."""
+        # Update settings based on the dialog input
+        if 'system_audio' in settings:
+            self.settings_manager.update_setting("system_audio", settings['system_audio'])
+            
+        if 'audio_device_id' in settings and settings['audio_device_id'] is not None:
+            self.settings_manager.update_setting("audio_device_id", settings['audio_device_id'])
+            
+        if 'continuous_transcription' in settings:
+            self.settings_manager.update_setting("continuous_transcription", settings['continuous_transcription'])
+            
+        if 'chunk_duration' in settings:
+            self.settings_manager.update_setting("chunk_duration", settings['chunk_duration'])
+            
+        # Update the system audio capture with new settings
+        if hasattr(self, 'system_audio_capture'):
+            # Update audio device if specified
+            if 'audio_device_id' in settings and settings['audio_device_id'] is not None:
+                self.system_audio_capture.configure_device(settings['audio_device_id'])
+                
+            # Update continuous mode if available
+            if 'continuous_transcription' in settings and hasattr(self.system_audio_capture, 'set_continuous_mode'):
+                chunk_duration = settings.get('chunk_duration', 10)
+                self.system_audio_capture.set_continuous_mode(
+                    settings['continuous_transcription'],
+                    chunk_duration
+                )
+        
+        # Update status
+        enabled = settings.get('system_audio', False)
+        status = "enabled" if enabled else "disabled"
+        self.update_status(f"System audio capture {status}")
+    
     def configure_system_audio(self):
         """Open the system audio configuration dialog."""
         dialog = SystemAudioDialog(

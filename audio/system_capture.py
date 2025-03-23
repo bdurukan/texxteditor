@@ -249,6 +249,13 @@ class SystemAudioCapture:
             # Convert to a single numpy array
             audio_data = np.concatenate(self.audio_frames)
             
+            # Check if audio contains actual sound (not just silence)
+            # Calculate RMS amplitude
+            rms = np.sqrt(np.mean(np.square(audio_data)))
+            if rms < 0.001:  # Very low amplitude threshold
+                self.update_status("Audio appears to be silent, skipping transcription")
+                return
+                
             # Save to temporary WAV file
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_wav:
                 temp_filename = temp_wav.name
@@ -322,6 +329,11 @@ class SystemAudioCapture:
             # Convert frames to a single array
             audio_data = np.concatenate(chunk_frames)
             
+            # Check if audio contains actual sound (not just silence)
+            rms = np.sqrt(np.mean(np.square(audio_data)))
+            if rms < 0.001:  # Very low amplitude threshold
+                return  # Skip silent audio
+                
             # Save to temporary WAV file
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_wav:
                 temp_filename = temp_wav.name
